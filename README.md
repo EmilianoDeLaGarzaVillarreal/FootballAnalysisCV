@@ -63,3 +63,6 @@ it transforms the video into fourcc format by using
 cv2.VideoWriter, we need to specify how many frames
 per second. Then we modify the frames in a for loop
 and after for loop finished we can release the video
+
+11 - Write about color clustering... used for assigning players
+to team
