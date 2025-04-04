@@ -1,106 +1,46 @@
-Important aspects of the project that I can talk about:
+Computer vision - Football analysis:
 
-1 - Object detection to differentiate players and ball.
-1.1 - What is Object detection? - Neural Network able to draw a bounding box around the object - and it is able to say what that object is. - It basically knows where it is inside of the image
-1.2 - Current state of the art library for Object Detection: - YOLO - We can use YOLO by using ultralytics.
-1.3 - Bounding Boxes. - Can befined by x,y for the area of the image, and w,h for - the width and height of the bounding box. - Alternatively we can use x,y then x,y whith the second pair - of coordinates being used for the bounding box.
-
-2 - Detect the ball constantly, the base model has problems
-following the ball and the detection constantly blinks.
-2.1 - Constant detection is important if we want to analyze ball - adquisition, and different stats.
-
-3 - Model is detecting people outside the field, we need to fix that.
-3.1 - Also differentiate between teams
-3.2 - Differentiate referees from player too.
-
-4 - How to read the file formats given by the YOLO model, for example:
-4.1 - The ID for the object
-4.2 - The center position given by x,y
-4.3 - The size of the Bounding Box given by relative size - from the center
-
-5 - Batch Size - CRITICAL aspect when training a model, in this case
-I could not train the model in the normal way, but specifying
-a batch size of 60% of my VRAM allowed me to run the model even
-if it exceeded my computer capabilities.
-5.1 - Batch size basically define the speed of training and
-the resources used for training.
-5.1.1 - Larger batch size leads to faster training and more
-resources used.
-5.1.2 - Smaller batch size lead to slower training but less
-resources used.
-5.2 - An advantage of smaller batch size is that it helps prevent
-overfitting by giving a regularzation effect to the model.
-
-6 - Epochs is making complete loop around the entire dataset
-6.1 - An epoch is made of several iterations, one for each
-batch
-
-7 - opencv2 will be used to read images from the video, the videos
-we have are 24 frames per second so we are reading 24 images
-per second
-
-8 - \_\_init\_\_.py inside a directory will make that directory a package.
-This allows us to import every function from any file inside that
-directory
-
-9 - Tracking How do we define if a bounding box from a previous frame
-is the same bounding box from a previous frame? (same user)
-9.1 - With only x,y,x,y coordinates we cannot define if
-a bounding box belonged to the same player.
-9.2 - We can think of it as moving the tracking box with the
-player, instead of creating new bounding boxes
-for each frame in a video.
-9.3 - A small tracker works on probability of a user being the
-the same user based on old\_position and new\_position
-
-10 - Video utilities
-10.1 -read\_video accepts a video path and will use cv2 VideoCapture
-to make the video in the video into a readable format
-then we read the capture which gives out ret(end?) and a
-frame which we append to a list of frames (the video)
-10.2 - save\_video accepts an output\_video\_frame, which comes
-from the tracker package, then we draw the annotations and
-it transforms the video into fourcc format by using
-cv2.VideoWriter, we need to specify how many frames
-per second. Then we modify the frames in a for loop
-and after for loop finished we can release the video
-10.2.1 - output\_video\_frame.shape gives the x and y dimensions
-of the entire video frame.
-
-11 - Tracker
-11.1 - in this package we have the model we are going to use and
-the default tracker, ByteTrack from supervision.
-11.2 First method called from main get\_get\_object\_tracks gets the
-frames from the videos and assigns bounding boxes for everyone
-in the video, this is done by calling detect\_frames.
-11.3 Detect\_frames - Simply calls model.predict to get video
-with bboxes.
-11.4 After getting the video with the bboxes we create the tracks
-for each object in the model.
-11.4.1 What are tracks? It is a dictionary with the key being the
-object, ex. 'player', where each bbox is assigned a place in the
-dictionary, ex. tracks['player'][frame\_num][track\_id] is a new entry
-in the dictionary, or the same entry is updated for the next frame,
-sharing the tracking id.
-
-12 - Image Transformation
-12.1 Cropping an image, we get the first frame of the video, then
-we crop the image based on the dimension of the bbox of a random
-player, then use cv2.imwrite to save the cropped image.
-12.2 K-Mean team assigning, We use the cropped image and get only
-the upper half, to only get shirt color as a predominant color.
-we the labels of the kmean and reshape them back to the image
-shape. A creative way of differentiating background from
-the player is getting the four corners of the image, where the
-player is least likely to be.
-
-13 - TeamAssigner
-13.1 We create a teamAssigner class initialized with a team color
-and a player\_team\_directory.
-13.2 - assign\_team\_color gets self, the frame and player\_detection,
-this last argument refers to the tracked bbox in the frame. We
-call get\_player\_color in a loop for each player detected in the 
-tracked frame, refer to Image transformation to see how this method works.
-
-11 - Write about color clustering... used for assigning players
-to team
+1 – I found out that my personal machine cannot run the chosen model under normal circumstances, so I modified the Batch Size which is a CRITICAL aspect when training a model. By specifying a batch size of 60% of my VRAM I was able to run the model.
+1.1 - Batch size defines the speed of training and the resources used for training.
+1.1.1 - Larger batch size leads to faster training and more resources used.
+1.1.2 - Smaller batch size lead to slower training but fewer resources used.
+1.2 - An advantage of smaller batch size is that it helps prevent overfitting by giving a regularization effect to the model.
+(Now to more technical learning) ->
+2 - Video utilities – Reading, Saving, and Writing
+2.1 - The first step on the project involved reading the the video input using cv2, this is simple enough as I only used the method VideoCapture() and iterated over the result appending the frames to a list.
+2.2 – Later in the project I had to save the video and for this I used the fourcc function using the ‘XVID’ format. The fourcc function is used to define the codec, which is how the video frames are compressed and stored.
+3 – Tracking Moving Objects – Assigning IDs and Unique Annotations
+3.1 - Tracking work by the model predicting the next move of the object in the video, that is why models like ByteTrack have parameters like ‘thresholds’. Also, the model tries to update the object tracks by matching new detection based on spatial proximity and confidence.
+3.1.1 In my project I used ByteTrack from the Supervision library, from Roboflow.
+3.2 - To use the tracker I first used the normal model I had obtained with the training data before. After calling predict for the frames in the video I added the detections to a list which would be used for the tracker to assign IDs for the objects detected in the video.
+3.3 - What is the tracks dictionary? Well, for each frame we create a key – tracks[‘player’][frame_num] - we then can loop through the IDs we got from the tracker and assign a bbox for each ID – tracks[‘player’][frame_num][player_id] = {‘bbox’ = [1,1,1,1]} – This would create and entry for the player id and assign a unique bbox to it. If there is no appearance of an object during a frame then the track for that frame would be empty.
+3.4 - Some extra interesting things about the tracker class implemented in the project is that it has a lot of drawing functions, from the ellipses that substituted the rectangle bboxes to the speed and distance traveled annotations.
+4 – Estimating Camera Movement – Getting Dynamic Section of Video to Better Estimate Object Movements
+4.1 - How does Computer Vision and Camera Movement relate? Well think in the following scenario, if you are recording the 100 meter dash competition from the stand and you are using a camera you will likely need to move the camera to follow the movement of the sprinters. If you do not take into account the movement of your camera and try to get the speed of the sprinters you will end up getting speeds lower than what should be in reality. This is because the objects detected in the frame are moving alongside the frame so a model out of the box would think that the objects are not moving.
+4.2 - I used several features in order to obtain an effective estimator of camera movement, I learned about how we sometimes need to mask specific areas of the frame in order to make the model focus into areas of more interest.
+4.3 - The way I detected movement was by using the previous frames features, ‘old_features’, and the next frames features, ‘new_features’ and comparing changes in distance. This require a couple of for loops in order to get the individual points of each feature but after obtaining the distance difference old frames and new frames and returning a list with the camera movement for each frame.
+4.4 - Then I had to add the objects adjusted positions based on the camera movements, to do this I subtracted the camera movement in the x and y axis from the position of an object at the current frame, this was saved in a new entry called ‘position_adjusted’.
+4.5 - Estimating camera movement is a very complex subjects and getting it right requires a lot of parameter optimization, I would like to learn more about more methods of doing this.
+5 – Transforming Eagle View to Top-Down View – Reducing Distortion / Standardizing Spatial Object Relationships
+5.1 – The input video shows a trapezoidal field of view, for computer vision models oftentimes is better to use a standard top-down view as it is more interpretable and reduces distortion.
+5.1.1 – We have the pixel vertices which are assigned from the four corners of the desired view area on the trapezoidal shape from the video. We then have the target vertices, which defines how the field should look. We then get the homography mapping transformation matrix is then calculated by cv2.getPerspectiveTransform.
+5.2 – All that is left after applying the perspective transform to the object position is to save it in a new entry, ‘position transformed’.
+5.2.1 – Take into account that this is done from the position adjusted from the camera movement.
+6 – Object Interpolation – Predicting Small Object Movements
+6.1 – In this function we are trying to fill missing values from our ‘ball’ tracks,
+we use Pandas interpolate and bfill and make the result the new ‘ball’ tracks.
+7 – Speed and Cumulative Distance Estimator – Giving Statistics to Objects
+7.1 By first defining a frame window I can now calculate distance between the starting position in a frame[i] and the end position in the last frame, frame [i+frame window]. This will return the distance covered in 5 frames.
+7.2 Calculating speed makes use of similar ideas and simply adds the frame rate to the equation, speed = distance/time elapsed.
+7.3 We then add the speed and distance as new entries for each object in the tracks dictionary.
+8 – Team Assigner – Differentiating Objects Based on Color / Grouping Similar Objects
+8.1 I used K-means in order to obtain a cluster of two colors from a cropped image of bbox. In the image the dominant color is the background while the least common is the shirt color of the player.
+8.1.1 – To be sure I am selecting the shirt color for the players I got the corners of the bbox which are, in most cases, part of the background. So by defining the background of the image we can get the shirt color as there are only two colors in the clustered image.
+8.2 We then get the player color of all the players in a frame and we use a K-means model in those colors in order to determine the two different team colors.
+8.3 We can then update the player dictionary with the team id and we won’t need to calculate it again unless the bbox of the player loses its tracking.
+8.4 After that we can update the ‘player’ tracks with a new entry for the team the player belongs to and the team color for that team.
+9 – Team Ball Assigner – Understanding Object Proximity
+9.1 First we measure the center of the bbox for the ball, and in order to get a more precise measurement, we calculate the distance from both bottom ends of a player bbox and get the minimum between those distances. If the distance is less than the maximum distance to be referred to as ‘possessing the ball’ then we say that the player has control of the ball.
+9.2 In order to calculate ball possession percentage I created a list where I would append the current team that had the ball, then we calculated the frames that team 1 had control of the ball vs team 2 and divided the result over total number of frames that the ball was in possession of any of the two teams.
+10 – The project includes several methods for drawing annotations and decorations to make the video look better. Please refer to the demo in order to see some of these annotation, and if you want to see the code you can check my GitHub.
+https://github.com/EmilianoDeLaGarzaVillarreal/FootballAnalysisCV
